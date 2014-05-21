@@ -1,39 +1,41 @@
 #include "network.h"
 
-void* Network::callProcess(int id, Message msg)
+void Network::processMessage(Message msg)
 {
-	void* context;
-	if (id < process_contexts.size())
+	int id = msg.to;
+
+	if (id >= processes.size() || id < 0)
 	{
-		context = process_contexts[id];
+		throw bad_process_id();
 	}
-	else
+
+	WorkFunction wf = work_functions[processes[id].type];
+
+	if (processes[id].context == NULL)
 	{
-		context = NULL;
+		processes[id].context = wf(id, this, NULL, Message(id));
 	}
-	return process_types[processes[id]](id, this, context, msg);
+
+	wf(id, this, processes[id].context, msg);
 }
 
-void Network::idleCalls()
+void Network::runIdleCalls()
 {
-	for (int i = 0; i < processes.size(); ++i)
+	for (int process_id = 0; process_id < processes.size(); ++process_id)
 	{
-		callProcess(i, Message());
+		processMessage(Message(process_id));
 	}
 }
 
-void Network::registerWorkFunction(const string &name, work_function functor)
+void Network::registerWorkFunction(const string &name, WorkFunction function)
 {
-	process_types[name] = functor;
+	work_functions[name] = function;
 }
 
-int Network::addProcess(const string &work_function)
+int Network::addProcess(const string &function_name)
 {
 	int id = processes.size();
-	processes.push_back(work_function);
-
-	void* context = callProcess(id, Message());
-	process_contexts.push_back(context);
+	processes.push_back(Process(function_name));
 
 	return id;
 }
@@ -43,7 +45,7 @@ void Network::sendMessage(Message msg)
 	message_queue.push(msg);
 }
 
-bool Network::nextTick()
+void Network::nextTick()
 {
 	queue<Message> temp_queue;
 
@@ -55,22 +57,17 @@ bool Network::nextTick()
 	if (temp_queue.empty())
 	{
 		idle_ticks++;
-		idleCalls();
-		return false;
 	}
 	else
 	{
 		idle_ticks = 0;
 		while(!temp_queue.empty()) {
-		    Message msg = temp_queue.front();
+		    processMessage(temp_queue.front());
 		    temp_queue.pop();
-
-		    callProcess(msg.to, msg);
 		}
 	}
 
-	idleCalls();
-	return true;
+	runIdleCalls();
 }
 
 void Network::run()

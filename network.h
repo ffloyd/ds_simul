@@ -5,8 +5,15 @@
 #include <queue>
 #include <map>
 #include <vector>
+#include <exception>
+#include <stdexcept>
 
 using namespace std;
+
+class bad_process_id : public logic_error {
+public:
+	bad_process_id(): logic_error("Bad process ID") {}
+};
 
 class Network;
 
@@ -17,10 +24,18 @@ struct Message
 	bool empty;
 
 	Message(int from, int to, string data) : from(from), to(to), data(data), empty(false) {};
-	Message() : empty(true) {};
+	Message(int to) : to(to), from(-1), empty(true) {};
 };
 
-typedef void* (* work_function)(int id, Network *network, void *context, Message msg);
+struct Process
+{
+	string type;
+	void* context;
+
+	Process(string type) : type(type), context(NULL) {};
+};
+
+typedef void* (* WorkFunction)(int id, Network *network, void *context, Message msg);
 
 class Network
 {
@@ -29,27 +44,23 @@ class Network
 	int idle_ticks;
 
 	queue<Message> message_queue;
-	map<string, work_function> process_types;
-	vector<string> processes;
-	vector<void*>  process_contexts;
+	map<string, WorkFunction> work_functions;
+	vector<Process> processes;
 
-	void* callProcess(int id, Message msg);
+	void processMessage(Message msg);
 
-	void idleCalls();
+	void runIdleCalls();
 
 public:
 	Network() : idle_ticks(0) {};
 
-	void registerWorkFunction(const string &name, work_function functor);
+	void registerWorkFunction(const string &name, WorkFunction function);
 
-	// returns process ID	
-	int addProcess(const string &work_function);
+	int addProcess(const string &function_name);
 
 	void sendMessage(Message msg);
 
-	void log(int id, const char* format_string, ...);
-
-	bool nextTick();
+	void nextTick();
 
 	void run();
 };
