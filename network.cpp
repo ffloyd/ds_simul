@@ -11,6 +11,7 @@ void Network::processMessage(Message msg)
 
 	WorkFunction wf = work_functions[processes[id].type];
 
+	// если у процесса еще нет контекста - создаем его (см. dummy_function в main.cpp)
 	if (processes[id].context == NULL)
 	{
 		processes[id].context = wf(id, this, NULL, Message(id));
@@ -18,6 +19,11 @@ void Network::processMessage(Message msg)
 
 	if (!processes[id].shutdowned)
 	{
+		// собственно доставка сообщения
+		if (!msg.empty)
+		{
+			printf("NETWORK: delivered message '%s' from %d to %d\n", msg.data.c_str(), msg.from, msg.to);
+		}
 		wf(id, this, processes[id].context, msg);
 	}
 }
@@ -41,7 +47,7 @@ void Network::applyInstability()
 			if (shutdown_roll < processes[process_id].shutdown_probability)
 			{
 				processes[process_id].shutdowned = true;
-				printf("MASTER: process with id %d shutdowned accidently...\n", process_id);
+				printf("NETWORK: process with id %d shutdowned accidently...\n", process_id);
 			}	
 		}
 	}
@@ -63,10 +69,15 @@ int Network::addProcess(const string &function_name, float shutdown_probability)
 void Network::sendMessage(Message msg)
 {
 	message_queue.push(msg);
+	if (!msg.empty)
+	{
+		printf("NETWORK: sent message '%s' from %d to %d\n", msg.data.c_str(), msg.from, msg.to);
+	}
 }
 
 void Network::nextTick()
 {
+	// Перекладываем все сообщения в temp_queue, чтобы не начать обрабатывать сообщения следующего тика
 	queue<Message> temp_queue;
 
 	while(!message_queue.empty()) {
@@ -98,5 +109,5 @@ void Network::run()
 	{
 		nextTick();
 	}
-	printf("All things done.\n");
+	printf("NETWORK: All things done.\n");
 }
