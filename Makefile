@@ -1,2 +1,2 @@
 all:
-	g++ main.cpp -o ds_sync
+	g++ main.cpp network.cpp -o ds_sync
