@@ -16,7 +16,10 @@ void Network::processMessage(Message msg)
 		processes[id].context = wf(id, this, NULL, Message(id));
 	}
 
-	wf(id, this, processes[id].context, msg);
+	if (!processes[id].shutdowned)
+	{
+		wf(id, this, processes[id].context, msg);
+	}
 }
 
 void Network::runIdleCalls()
@@ -27,15 +30,32 @@ void Network::runIdleCalls()
 	}
 }
 
+void Network::applyInstability()
+{
+	for (int process_id = 0; process_id < processes.size(); ++process_id)
+	{
+		if (!processes[process_id].shutdowned)
+		{
+			float shutdown_roll = rand() / (float)(RAND_MAX);
+
+			if (shutdown_roll < processes[process_id].shutdown_probability)
+			{
+				processes[process_id].shutdowned = true;
+				printf("MASTER: process with id %d shutdowned accidently...\n", process_id);
+			}	
+		}
+	}
+}
+
 void Network::registerWorkFunction(const string &name, WorkFunction function)
 {
 	work_functions[name] = function;
 }
 
-int Network::addProcess(const string &function_name)
+int Network::addProcess(const string &function_name, float shutdown_probability)
 {
 	int id = processes.size();
-	processes.push_back(Process(function_name));
+	processes.push_back(Process(function_name, shutdown_probability));
 
 	return id;
 }
@@ -53,6 +73,8 @@ void Network::nextTick()
 	    temp_queue.push(message_queue.front());
 	    message_queue.pop();
 	}
+
+	applyInstability();
 
 	if (temp_queue.empty())
 	{

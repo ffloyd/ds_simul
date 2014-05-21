@@ -43,7 +43,7 @@ int main(int argc, char const *argv[])
 	network.registerWorkFunction("dummy", dummy_function);
 	network.addProcess("dummy");
 	network.addProcess("dummy");
-	network.addProcess("dummy");
+	network.addProcess("dummy", 0.1);
 	network.sendMessage(Message(-1, 0, "HELLO!"));
 
 	network.run();

@@ -7,6 +7,7 @@
 #include <vector>
 #include <exception>
 #include <stdexcept>
+#include <cstdlib>
 
 using namespace std;
 
@@ -31,8 +32,14 @@ struct Process
 {
 	string type;
 	void* context;
+	float shutdown_probability;
+	bool shutdowned;
 
-	Process(string type) : type(type), context(NULL) {};
+	Process(string type, float shutdown_probability) : 
+		type(type),
+		context(NULL),
+		shutdown_probability(shutdown_probability),
+		shutdowned(false) {};
 };
 
 typedef void* (* WorkFunction)(int id, Network *network, void *context, Message msg);
@@ -51,12 +58,14 @@ class Network
 
 	void runIdleCalls();
 
+	void applyInstability();
+
 public:
 	Network() : idle_ticks(0) {};
 
 	void registerWorkFunction(const string &name, WorkFunction function);
 
-	int addProcess(const string &function_name);
+	int addProcess(const string &function_name, float shutdown_probability = 0.0);
 
 	void sendMessage(Message msg);
 
