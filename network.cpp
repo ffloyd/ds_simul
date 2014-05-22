@@ -53,6 +53,16 @@ void Network::applyInstability()
 	}
 }
 
+void Network::applyInstability(int id)
+{
+	if (!processes[id].shutdowned)
+        {
+		processes[id].shutdowned = true;
+                printf("NETWORK: process with id %d shutdowned accidently...\n", id);
+      	}
+}
+
+
 void Network::registerWorkFunction(const string &name, WorkFunction function)
 {
 	work_functions[name] = function;
@@ -110,4 +120,17 @@ void Network::run()
 		nextTick();
 	}
 	printf("NETWORK: All things done.\n");
+}
+
+int Network::nOfProcesses()
+{
+	return processes.size();
+}
+
+bool Network::ifAlive(int id)
+{
+	if (processes[id].shutdowned)
+		return false;
+	else
+		return true;
 }

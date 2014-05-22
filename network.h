@@ -7,6 +7,7 @@
 #include <vector>
 #include <stdexcept>
 #include <cstdlib>
+#include <cstdio>
 
 using namespace std;
 
@@ -86,6 +87,15 @@ public:
 
 	// полный запуск запуск сети, завершается по достижению max_idle_ticks
 	void run();
+
+	// возвращает количество процессов в сети
+	int nOfProcesses();
+
+	// возвращает true, если процесс жив
+	bool ifAlive(int);
+
+        // убивает один процесс с 100% вероятностью
+        void applyInstability(int);
 };
 
 #endif
